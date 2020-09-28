@@ -17,10 +17,9 @@ using namespace std;
 /*
  *
  * Input.txt works in current configuration. The issue was that you were not checking for tabs in the chars being passed in
- * 	- You aren't properly checking strings though. Fix it. Either have a counter that ++ on open and -- on close OR vector<char> push('"') on open, pop() on close
- * 	- try the integers first before you start ruining stuff please
- * 		-- getting there. Isn't recognizing integers nor is it recognizing = sign. It's probably the string read in checkLine that isn't being added to correctly
- * 		all in all, should be easy-ish fixes so get them done please
+ * 	-There is one instance of one of chars in a line not being read correctly. It's with semi colon. it reads fine the other 2 times, but the first semi colon in the
+ * 	 check line function isn't being converted to string properly. It's going to the ascii value, but that shouldn't matter. It' just not being shown in the token map
+ * 	 at all
  *
  * Compiler part 1 -- Lexical analyzer
  *
@@ -184,9 +183,25 @@ private:
 		if(temp != "") {inputs.push_back(temp);}
 		return inputs;
 	}
+	bool isValidChar(char c)
+	{
+		bool valid = true;
+		string validChars = "";
+		std::map<string, string>::iterator mitr = _tokenMap.begin();
+		while(mitr != _tokenMap.end())
+		{
+			validChars += mitr->first;
+			mitr++;
+		}
+		int count = 0, size = validChars.length();
+		while(valid && count < size)
+		{
+			if(validChars[count] == c) {valid = false;}
+			count++;
+		}
+		return valid;
+	}
 	/*
-	 * !!! THIS NEEDS TO BE MOVED TO PRIVATE AFTER TESTING !!!
-	 *
 	 * pre: have a line that needs to be checked for syntax
 	 * post: vector containing the tokens and potential error found in the string
 	 *
@@ -198,8 +213,8 @@ private:
 	{
 		vector<string> tokens;
 		string read = "", error = "";
-		int length = line.length(), count = 0;
-		bool test = false;
+		int length = line.length(), count = 0, qmarks = 0;
+		/*bool test = false;
 		while(!test)
 		{
 			char temp = line[count];
@@ -208,19 +223,29 @@ private:
 				count++;
 			}
 			else {test = true;}
-		}
+		}*/
+		string test;
 		while(count < length && error == "")
 		{
 			char c = line[count];
 			string temp;
 			cout << "C: " << c << endl;
-			if(c != ' ' && c != '\t') {read += c;}
+			if(c != ' ' && c != '\t' && c != '=' && c != 34) {read += c;}
+			if(c == ' ' && qmarks > 0) {read += c;}
+			if(c == 34) {qmarks++;}
+			/*if(c == ' ' && qmarks > 0) {read += c;}*/
 			cout << "read after adding c: " << read << endl;
-			if(_tokenMap[to_string(c)] != "")
+			string key = to_string(c);
+			if(c == 61) {key = "=";}
+			/*if(c == 59) {key = ";";}*/ // There's one instance. One. One that it isn't recognizing a semicolon. It's preventing it from recognizing the int proceeding
+			cout << "THIS IS A TEST FOR THE SEMI COLON, MAP[;]: " << _tokenMap[";"] << endl;
+			cout << "KEY: " << key << endl << "map[key]: " << _tokenMap[key] << endl;
+			if(key == ";") {cout << "YEAH ; IS HERE: " << _tokenMap[key] << endl;}
+			if(_tokenMap[key] != "")
 			{
-				cout << "c: " << c << " matches token " << _tokenMap[to_string(c)] << endl;
-				temp = _tokenMap[to_string(c)]+" : "+c;
-				tokens.push_back(temp);
+				cout << "c: " << c << " matches token " << _tokenMap[key] << endl;
+				temp = _tokenMap[key]+" : "+c;
+				cout << "c: " << c << " was pushed" << endl;
 			}
 			else
 			{
@@ -229,7 +254,6 @@ private:
 				{
 					cout << "read: " << read << " matches token " << _tokenMap[read] << endl;
 					temp = _tokenMap[read]+" : "+read;
-					tokens.push_back(temp);
 					read = "";
 				}
 				cout << "added to read, read: " << read << " has no match" << endl;
@@ -238,47 +262,30 @@ private:
 			}
 			if(temp != "" && read != "")
 			{
-				if(isNumber(read[0]))
+				cout << "after push: " << endl;
+				if(read != "" && isNumber(read[0]))
 				{
 					// integer check
-					int length = read.length(), icnt = 0;
-					if(length > 1)
+					int length = read.length(), icnt = 1;
+					while(icnt < length && error != "")
 					{
-						icnt = 1;
-						while(icnt < length)
-						{
-							if(!isNumber(read[icnt])) {error = "Error: cannot have identifier start with an integer";} // error
-							else {icnt++;} // is still int
-						}
-						if(error == "") {tokens.push_back("t_int : "+read); read = "";} // is syntactically an integer
+						char integer = read[icnt];
+						if(!isNumber(integer)) {error = "Error: cannot have identifier start with number";}
+						icnt++;
 					}
+					if(error == "") {tokens.push_back("t_int : "+read); cout << "ERROR IN INTEGER" << endl;}
+					else {tokens.push_back(error); cout << "int " << read << " was pushed" << endl;}
+					read = "";
 				}
-				else
-				{
-					// string check
-					int length = read.length(), strCount = 0, qcnt = 0;
-					while(strCount < length && error == "")
-					{
-						char str_c = read[strCount];
-						if(str_c == '"') {qcnt++;}
-						if(qcnt > 2) {error = "Error: cannot use a quotation mark in an identifier";} // string/identifier error
-					}
-					if(error == "" && qcnt == 2) {tokens.push_back("t_str : "+read); read = "";} // is syntactically a string
-					else if(error == "" && qcnt != 2) {error = "Error: cannot use quotation mark in an identifier";} // string/identifier error
-					else if(error == "" && qcnt == 0)
-					{
-						strCount = 0;
-						while(strCount < length && error == "")
-						{
-							char str_c = read[strCount];
-							strCount++;
-						}
-						if(error == "") {tokens.push_back("t_id : "+read); read = "";}
-					}
-				}
+				if(read != "") {tokens.push_back("t_id : "+read); read = "";}
 			}
+			if(qmarks == 2) {qmarks = 0; tokens.push_back("t_str : "+read); cout << "read as str: " << read << endl; read = "";}
+			if(temp != "") {tokens.push_back(temp);}
 			count++;
 		}
+		cout << "Quotation marks: " << qmarks << endl;
+		if(qmarks != 0) {error = "Error: cannot have quotation mark in identifier"; tokens.push_back(error);}
+		cout << endl << "=====================" << endl << "Quote test: " << test << endl << "=========================" << endl;
 		return tokens;
 	}
 public:
