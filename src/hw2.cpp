@@ -16,22 +16,18 @@ using namespace std;
 
 /*
  *
- * Input.txt works in current configuration. The issue was that you were not checking for tabs in the chars being passed in
- * 	-There is one instance of one of chars in a line not being read correctly. It's with semi colon. it reads fine the other 2 times, but the first semi colon in the
- * 	 check line function isn't being converted to string properly. It's going to the ascii value, but that shouldn't matter. It' just not being shown in the token map
- * 	 at all
+ *
  *
  * Compiler part 1 -- Lexical analyzer
  *
+ *
+ *======================================================================= Delete me ====================================================================================
  * read in a file of source code, determining if the words are a part
  * of the language (language is made up for project)
  *
  * Remember, this is all one file. Do NOT make seperate .h and .cpp
  * files for class LexAnalyzer
- *
- * Issues:
- * 	-Was getting an error for map::iterator when trying to put a method below isString, worked fine after moving it. Find the source, maybe a spacing
- * 	 or brackets/parenthesis issue?
+ *======================================================================================================================================================================
  *
  * Notes:
  * 	-Still need to implement:
@@ -41,27 +37,51 @@ using namespace std;
  * 		-basic UI
  * 		-rework isString and isNumber, should return string "t_int" or "t_string" rather than true/false?
  * 			-or at least implement that in the scanFile method -- opted for this, needs testing
+ * 	-Input.txt works in current configuration. The issue was that you were not checking for tabs in the chars being passed in
+ * 		-There is one instance of one of chars in a line not being read correctly. It's with semi colon. it reads fine the other 2 times, but the first semi colon
+ * 		 in the check line function isn't being converted to string properly. It's going to the ascii value, but that shouldn't matter. It' just not being shown in the
+ * 		 token map at all
+ * 		 	--I think it's fixed, needs to be tested more
+ * 	-Main seems done... it doesn't feel like it should be though, so WITHOUT MESSING ANYTHING UP/ADDING UNNECESSARY CODE, see if there's anything you can add
+ * 	-Make sure errors are being caught, just keep testing
+ *
+ * 	-There's an extra space being added to the strings, fix it
+ *
+ * To-Do:
+ * 	-Implement isValidChar() in LexAnalyzer -- needed for further errors:
+ * 	-Continue testing:
+ * 	-Clean up comments:
+ * 	-Delete testing print statements:
+ * 	-See if you can modularize code any further
+ * 	-Finish documenting code
+ * 	-Add name, class, etc to top of code
  *
  *
- *================================================================== Reference ===========================================================================
- * I wasn't sure how to handle istream and ostream objects. This is a small 'reference' of sorts to the website that I've been looking at how to handle
+ *====================================================================== Reference =====================================================================================
+ * I wasn't sure how to handle istream and ostream objects. This is a small 'reference' of sorts to the web site that I've been looking at how to handle
  * certain classes and methods in c++: www.cplusplus.com/reference/
  *
  * I don't know if it's entirely necessary but I would rather have a source cited than not
- *========================================================================================================================================================
+ *
+ * This is mostly irrelevant since going over inheritance in class but I'm still leaving it in the code for the reason above
+ *======================================================================================================================================================================
  *
  *
  *
  *
  */
 
+//===================================================================== LexAnalyzer ====================================================================================
 class LexAnalyzer
 {
 private:
+	//=============================================================== Member variables =================================================================================
 	vector<string> _lexemes;
 	vector<string> _tokens;
 	map<string, string> _tokenMap;
-	//other private methods go here
+	//==================================================================================================================================================================
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//=============================================================== Private Methods ==================================================================================
 	/*
 	 * pre: Called to check if character is a number
 	 * post: returns boolean confirming if char is a number
@@ -214,35 +234,24 @@ private:
 		vector<string> tokens;
 		string read = "", error = "";
 		int length = line.length(), count = 0, qmarks = 0;
-		/*bool test = false;
-		while(!test)
-		{
-			char temp = line[count];
-			if(temp == ' ' || temp == '\t')
-			{
-				count++;
-			}
-			else {test = true;}
-		}*/
 		string test;
 		while(count < length && error == "")
 		{
 			char c = line[count];
 			string temp;
 			cout << "C: " << c << endl;
-			if(c != ' ' && c != '\t' && c != '=' && c != 34) {read += c;}
+			if(((c != ' ' && c != '\t' && c != '=' && c != 34) || (c == ' ' && qmarks > 0)) && c != 59) {read += c;}
 			if(c == ' ' && qmarks > 0) {read += c;}
 			if(c == 34) {qmarks++;}
-			/*if(c == ' ' && qmarks > 0) {read += c;}*/
 			cout << "read after adding c: " << read << endl;
 			string key = to_string(c);
 			if(c == 61) {key = "=";}
-			/*if(c == 59) {key = ";";}*/ // There's one instance. One. One that it isn't recognizing a semicolon. It's preventing it from recognizing the int proceeding
-			cout << "THIS IS A TEST FOR THE SEMI COLON, MAP[;]: " << _tokenMap[";"] << endl;
-			cout << "KEY: " << key << endl << "map[key]: " << _tokenMap[key] << endl;
+			/*cout << "THIS IS A TEST FOR THE SEMI COLON, MAP[;]: " << _tokenMap[";"] << endl;
+			cout << "KEY: " << key << endl << "map[key]: " << _tokenMap[key] << endl;*/
 			if(key == ";") {cout << "YEAH ; IS HERE: " << _tokenMap[key] << endl;}
-			if(_tokenMap[key] != "")
+			if(_tokenMap[key] != "" || c == 59)
 			{
+				if(c == 59) {key = ";";}
 				cout << "c: " << c << " matches token " << _tokenMap[key] << endl;
 				temp = _tokenMap[key]+" : "+c;
 				cout << "c: " << c << " was pushed" << endl;
@@ -256,9 +265,9 @@ private:
 					temp = _tokenMap[read]+" : "+read;
 					read = "";
 				}
-				cout << "added to read, read: " << read << " has no match" << endl;
+				/*cout << "added to read, read: " << read << " has no match" << endl;
 				cout << "force test: read: " << read << endl << "token[read]: " << _tokenMap[read] << endl;
-				cout << "token[begin]: " << _tokenMap["begin"] << endl;
+				cout << "token[begin]: " << _tokenMap["begin"] << endl;*/
 			}
 			if(temp != "" && read != "")
 			{
@@ -283,19 +292,25 @@ private:
 			if(temp != "") {tokens.push_back(temp);}
 			count++;
 		}
-		cout << "Quotation marks: " << qmarks << endl;
+		//cout << "Quotation marks: " << qmarks << endl;
 		if(qmarks != 0) {error = "Error: cannot have quotation mark in identifier"; tokens.push_back(error);}
-		cout << endl << "=====================" << endl << "Quote test: " << test << endl << "=========================" << endl;
+		//cout << endl << "=====================" << endl << "Quote test: " << test << endl << "=========================" << endl;
 		return tokens;
 	}
+	//==================================================================================================================================================================
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//====================================================================== Public Methods ============================================================================
 public:
 	LexAnalyzer(){}
-	void setMap(istream&); // document this, this is for if the default constructor is used rather than the n-argument
 	LexAnalyzer(istream&);
+	void setMap(istream&); // document this, this is for if the default constructor is used rather than the n-argument
 	void scanFile(istream&, ostream&);
 	void test() {testOut();} // calls for test out, redundant. remove this for easier testing
+	//==================================================================================================================================================================
 };
-//============================================================ Class Methods =============================================================================
+//======================================================================================================================================================================
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//========================================================================== Class Methods =============================================================================
 /*
  * pre:
  * post:
@@ -395,18 +410,73 @@ void LexAnalyzer::scanFile(istream& infile, ostream& outfile) // this needs a co
 	outfile.flush();
 	if(error != "") {cout << error << endl;}
 }
+//======================================================================================================================================================================
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//============================================================================ Main ====================================================================================
 int main()
 {
-	//==================================================================================================================================================================
+	//================================================================== Initializations ===============================================================================
 	ifstream infile;
 	ofstream outfile;
-	string tokenfn = "tokens.txt", inputfn = "input2.txt", outputfn = "outfile2.txt";
+	string tokenfn = "tokens.txt";
+	string inputfn = "";
+	string outputfn = "";
 	infile.open(tokenfn);
 	LexAnalyzer lex(infile);
 	infile.close();
-	infile.open(inputfn);
-	outfile.open(outputfn);
-	lex.scanFile(infile, outfile);
-	outfile.close();
+	//==================================================================================================================================================================
+
+	cout << "Compiler - part 1 by John Wolf" << endl << "You can enter 0 at any input to end the program" << endl;
+	string input = "", temp;
+	/*cout << "Enter the name of the file to be syntax check: " << endl;
+	cin >> input;*/
+	if(input != "0")
+	{
+		//inputfn = input;
+		/*cout << "Enter the name of the output file: " << endl;
+		cin >> input;
+		if(input != "0") {outputfn = input;}*/
+
+		//!!! FOR TESTING !!!
+		inputfn = "input2.txt";
+		outputfn = "outfile2.txt";
+
+		infile.open(inputfn);
+		outfile.open(outputfn);
+		lex.scanFile(infile, outfile);
+		cout << "Code finished scanning" << endl; // for testing, delete me before turning in
+	}
+	else {cout << "Exiting" << endl;}
 	return 0;
 }
+//======================================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
