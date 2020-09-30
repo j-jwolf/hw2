@@ -1,0 +1,26 @@
+t_id : m
+ : m
+t_id : a
+ : a
+t_id : i
+ : i
+t_id : n
+ : n
+t_id : (
+ : (
+t_id : )
+ : )
+ : 	
+t_id : b
+ : b
+t_id : e
+ : e
+t_id : g
+ : g
+t_id : i
+ : i
+t_id : n
+ : n
+Error: cannot use a quotation mark in an identifier
+Error: cannot use a quotation mark in an identifier
+Error: cannot use a quotation mark in an identifier

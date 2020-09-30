@@ -1,10 +1,15 @@
 //============================================================================
 // Name        : hw2.cpp
-// Author      : 
+// Author      :
 // Version     :
 // Copyright   : Your copyright notice
 // Description : Hello World in C++, Ansi-style
 //============================================================================
+
+/*
+ *!!! ^ DO THIS, DUMBASS ^ !!! :)
+ */
+
 
 #include <iostream>
 #include <vector>
@@ -240,36 +245,42 @@ private:
 			char c = line[count];
 			string temp;
 			cout << "C: " << c << endl;
+			if(qmarks > 2) {error = "Error: cannot have quotations in identifier";}
 			if(((c != ' ' && c != '\t' && c != '=' && c != 34) || (c == ' ' && qmarks > 0)) && c != 59) {read += c;}
 			if(c == ' ' && qmarks > 0) {read += c;}
-			if(c == 34) {qmarks++;}
+			if(c == 34) {qmarks++; cout << endl << endl << endl << "c == " << c << endl << endl << endl;}
 			cout << "read after adding c: " << read << endl;
 			string key = to_string(c);
 			if(c == 61) {key = "=";}
-			/*cout << "THIS IS A TEST FOR THE SEMI COLON, MAP[;]: " << _tokenMap[";"] << endl;
-			cout << "KEY: " << key << endl << "map[key]: " << _tokenMap[key] << endl;*/
 			if(key == ";") {cout << "YEAH ; IS HERE: " << _tokenMap[key] << endl;}
 			if(_tokenMap[key] != "" || c == 59)
 			{
 				if(c == 59) {key = ";";}
-				cout << "c: " << c << " matches token " << _tokenMap[key] << endl;
-				temp = _tokenMap[key]+" : "+c;
-				cout << "c: " << c << " was pushed" << endl;
+				if(qmarks == 1 && c != 34) {error = "Error: cannot use quotation marks in identifier";}
+				if(error == "")
+				{
+					cout << "c: " << c << " matches token " << _tokenMap[key] << endl;
+					temp = _tokenMap[key]+" : "+c;
+					cout << "c: " << c << " was pushed" << endl;
+				}
 			}
 			else
 			{
-				cout << "Test: " << _tokenMap[read] << endl << "Read: " << read << endl;
-				if(_tokenMap[read] != "")
+				if(error == "")
 				{
-					cout << "read: " << read << " matches token " << _tokenMap[read] << endl;
-					temp = _tokenMap[read]+" : "+read;
-					read = "";
+					cout << "Test: " << _tokenMap[read] << endl << "Read: " << read << endl;
+					if(_tokenMap[read] != "")
+					{
+						cout << "read: " << read << " matches token " << _tokenMap[read] << endl;
+						temp = _tokenMap[read]+" : "+read;
+						read = "";
+					}
 				}
 				/*cout << "added to read, read: " << read << " has no match" << endl;
 				cout << "force test: read: " << read << endl << "token[read]: " << _tokenMap[read] << endl;
 				cout << "token[begin]: " << _tokenMap["begin"] << endl;*/
 			}
-			if(temp != "" && read != "")
+			if(temp != "" && read != "" && error == "")
 			{
 				cout << "after push: " << endl;
 				if(read != "" && isNumber(read[0]))
@@ -282,18 +293,22 @@ private:
 						if(!isNumber(integer)) {error = "Error: cannot have identifier start with number";}
 						icnt++;
 					}
-					if(error == "") {tokens.push_back("t_int : "+read); cout << "ERROR IN INTEGER" << endl;}
-					else {tokens.push_back(error); cout << "int " << read << " was pushed" << endl;}
+					if(error == "") {tokens.push_back("t_int : "+read);}
+					else {tokens.push_back(error); cout << "ERROR IN INTEGER";}
 					read = "";
 				}
 				if(read != "") {tokens.push_back("t_id : "+read); read = "";}
 			}
-			if(qmarks == 2) {qmarks = 0; tokens.push_back("t_str : "+read); cout << "read as str: " << read << endl; read = "";}
-			if(temp != "") {tokens.push_back(temp);}
-			count++;
+			if(error == "")
+			{
+				if(qmarks == 2) {qmarks = 0; tokens.push_back("t_str : "+read); cout << "read as str: " << read << endl; read = "";}
+				if(temp != "") {tokens.push_back(temp);}
+				count++;
+			}
 		}
+		if(error != "") {tokens.push_back(error);}
 		//cout << "Quotation marks: " << qmarks << endl;
-		if(qmarks != 0) {error = "Error: cannot have quotation mark in identifier"; tokens.push_back(error);}
+		if(qmarks != 0 && qmarks != 2) {cout << "qmarks: " << qmarks << endl;}
 		//cout << endl << "=====================" << endl << "Quote test: " << test << endl << "=========================" << endl;
 		return tokens;
 	}
@@ -397,7 +412,7 @@ void LexAnalyzer::scanFile(istream& infile, ostream& outfile) // this needs a co
 			count++;
 		}
 		string errorCheck = tokens[vecSize-1];
-		if(errorCheck.substr(0, 5) == "Error:") {error = errorCheck;}
+		if(errorCheck[0] == 'E') {error = errorCheck;}
 		getline(infile, temp);
 		cout << "Next line: " << temp << endl;
 	}
@@ -450,33 +465,6 @@ int main()
 	return 0;
 }
 //======================================================================================================================================================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

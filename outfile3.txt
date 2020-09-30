@@ -1,0 +1,7 @@
+t_main : main
+s_lparen : (
+s_rparen : )
+t_begin : begin
+t_output : output
+s_lparen : (
+Error: cannot use quotation marks in identifier
