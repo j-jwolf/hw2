@@ -1,14 +1,11 @@
 //============================================================================
-// Name        : hw2.cpp
-// Author      :
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
+// Name        : John Wolf
+// Project     : HW1 -- Wheel of Fortune
+// Professor   : Dr.St.Clair
+// Class       : CSCE 306
+// Description : Uses classes GamePhrases and GameState to run a game
 //============================================================================
 
-/*
- *!!! ^ DO THIS, DUMBASS ^ !!! :)
- */
 
 
 #include <iostream>
