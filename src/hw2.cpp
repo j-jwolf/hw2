@@ -14,6 +14,7 @@
 #include <iterator>
 #include <ios>
 #include <fstream>
+#include <sstream>
 using namespace std;
 
 /*
@@ -21,6 +22,8 @@ using namespace std;
  *====================================================================== Reference =====================================================================================
  * I wasn't sure how to handle istream and ostream objects. This is a small 'reference' of sorts to the web site that I've been looking at how to handle
  * certain classes and methods in c++: www.cplusplus.com/reference/
+ *
+ * I also used the reference site to see how to use string stream for converting the chars into strings without having them read as their ascii values
  *
  * I don't know if it's entirely necessary but I would rather have a source cited than not
  *
@@ -86,6 +89,15 @@ private:
 		if(temp != "") {inputs.push_back(temp);}
 		return inputs;
 	}
+	string findKey(string key)
+	{
+		std::map<string, string>::iterator mitr = _tokenMap.begin();
+		string s;
+		mitr = _tokenMap.find(key);
+		if(mitr != _tokenMap.end()) {s = mitr->second;}
+		else {s = "";}
+		return s;
+	}
 	/*
 	 * pre: have a line that needs to be checked for syntax
 	 * post: vector containing the tokens and potential error found in the string
@@ -94,66 +106,110 @@ private:
 	 *
 	 * @return vector containing tokens and potential error; there will only be 1 error at most
 	 */
-	vector<string> checkLine(string line)
+	vector<string> lineCheck(string line)
 	{
 		vector<string> tokens;
-		string read = "", error = "";
-		int length = line.length(), count = 0, qmarks = 0;
-		string test;
-		while(count < length && error == "")
+		string read, error = "";
+		int length = line.length(), count = 0;
+		bool isStr = false;
+		while(count < length)
 		{
 			char c = line[count];
+			stringstream sstream; // used string stream because of a few issues with to_string converting chars to their ascii values rather than to a string
+			sstream << c; // stores the char into the stream
 			string temp;
-			if(qmarks > 2) {error = "Error: cannot have quotations in identifier";}
-			if(((c != ' ' && c != '\t' && c != '=' && c != 34) || (c == ' ' && qmarks > 0)) && c != 59) {read += c;}
-			if(c == ' ' && qmarks > 0) {read += c;}
-			if(c == 34) {qmarks++;}
-			string key = to_string(c);
-			if(c == 61) {key = "=";}
-			if(_tokenMap[key] != "" || c == 59)
+			sstream >> temp; // retrieves the char as a string
+			string key;
+			key = findKey(temp);
+			string token;
+			if(key != "" && !isStr) {token = key+" : "+temp;} // read char was found in token map, sets token to its code
+			string copy = "";
+			if(token == "") // char was not found in map
 			{
-				if(c == 59) {key = ";";}
-				if(qmarks == 1 && c != 34) {error = "Error: cannot use quotation marks in identifier";}
-				if(error == "") {temp = _tokenMap[key]+" : "+c;}
-			}
-			else
-			{
-				if(error == "")
+				if(c == '"')
 				{
-					if(_tokenMap[read] != "")
+					isStr = !isStr; // if closed string, opens or if open, closes
+					if(!isStr) {token = "t_str : "+temp;} // gets code for string if one closed
+				}
+				if(isStr)
+				{
+					if(c != '"') {read += temp;} // if its a string, any character can be used
+				}
+				else
+				{
+					if(c != ' ' && c != '\t') {read += temp;} // ignoring tabs and spaces
+					key = findKey(read); // checks if adding newest char makes a keyword
+					if(key != "") {token = findKey(read)+" : "+read; read = "";} // if not empty, one was found
+					if(token != "")
 					{
-						temp = _tokenMap[read]+" : "+read;
+						if(read != "") // this is so that anything read before the keyword or symbol is pushed first
+						{
+							copy = token; // copy variable to store the code of the symbol/keyword
+							if(isNumber(read[0])) // starts with an integer
+							{
+								int rlen = read.length(), rcnt = 0;
+								while(rcnt < rlen && error == "")
+								{
+									char tchar = read[rcnt];
+									if(!isNumber(tchar)) {error = "Error: cannot start an identifier with an integer";} // non integer was found, error
+									rcnt++;
+								}
+								token = "t_int : "+read;
+								read = "";
+							}
+							else // does not start with an integer
+							{
+								if(key != copy) // prevents keywords/symbols from being pushed as t_id keyword
+								{
+									token = "t_id : "+read;
+									read = "";
+								}
+								else {copy = "";} // if duplicate, clears copy
+							}
+						}
+					}
+				}
+			}
+			else // char was found in map
+			{
+				if(read != "") // if there are more chars that were read, enters block
+				{
+					copy = token; // copies code for symbol so that what was read before can be pushed
+					if(isNumber(read[0])) // starts with an integer
+					{
+						int rlen = read.length(), rcnt = 0;
+						while(rcnt < rlen && error == "")
+						{
+							char tchar = read[rcnt];
+							if(!isNumber(tchar)) {error = "Error: cannot start an identifier with an integer";} // non integer value found, error
+							rcnt++;
+						}
+						token = "t_int : "+read;
 						read = "";
 					}
-				}
-			}
-			if(temp != "" && read != "" && error == "")
-			{
-				if(read != "" && isNumber(read[0]))
-				{
-					// integer check
-					int length = read.length(), icnt = 1;
-					while(icnt < length && error != "")
+					else
 					{
-						char integer = read[icnt];
-						if(!isNumber(integer)) {error = "Error: cannot have identifier start with number";}
-						icnt++;
+						if(key != token) // prevents symbol from being pushed as t_id
+						{
+							token = "t_id : "+read;
+							read = "";
+						}
+						else {copy = "";} // if duplicate, clears copy so it doesn't get pushed below
 					}
-					if(error == "") {tokens.push_back("t_int : "+read);}
-					else {tokens.push_back(error);}
-					read = "";
 				}
-				if(read != "") {tokens.push_back("t_id : "+read); read = "";} // if not an integer, string, symbol or keyword, its an id (if it doesn't start with an int
 			}
-			if(error == "")
+			count++;
+			if(error != "") {tokens.push_back(error);} // error was found
+			else // no errors
 			{
-				if(qmarks == 2) {qmarks = 0; tokens.push_back("t_str : "+read);}
-				if(temp != "") {tokens.push_back(temp);}
-				count++;
+				if(token != "") // pushes token if there is one
+				{
+					tokens.push_back(token);
+					if(copy != "") {tokens.push_back(copy);} // pushes the keyword/symbol code if one exists
+				}
 			}
 		}
-		if(error != "") {tokens.push_back(error);}
-		if(qmarks != 0 && qmarks != 2) {cout << "qmarks: " << qmarks << endl;}
+		if(isStr) {error = "Error: cannot use quotation marks in an identifier"; tokens.push_back(error);} // pushes error if there is an unclosed string
 		return tokens;
 	}
 	//==================================================================================================================================================================
@@ -275,7 +331,7 @@ void LexAnalyzer::scanFile(istream& infile, ostream& outfile) // this needs a co
 	vector<string> toWrite;
 	while(!infile.eof() && error == "")
 	{
-		vector<string> tokens = checkLine(temp);
+		vector<string> tokens = lineCheck(temp);
 		int vecSize = tokens.size(), count = 0;
 		while(count < vecSize)
 		{
@@ -323,6 +379,7 @@ int main()
 		{
 			outputfn = input;
 			infile.open(inputfn);
+			if(!infile) {cout << "error linking file" << endl; exit(-1);}
 			outfile.open(outputfn);
 			lex.scanFile(infile, outfile);
 			cout << "Code finished scanning" << endl << endl << "Results written to " << outputfn << endl;
